@@ -1,0 +1,34 @@
+{{- if .Values.squashauto.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "AppCtx.squashautoName" . }}-service
+  labels: {{ include "AppCtx.squashautoLabels" . | nindent 8 }}
+spec:
+  selector: {{ include "AppCtx.squashautoSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: receptionnist
+      protocol: TCP
+      port: 7774
+      targetPort: 7774
+    - name: observer 
+      protocol: TCP
+      port: 7775
+      targetPort: 7775
+    - name: killswitch 
+      protocol: TCP
+      port: 7776
+      targetPort: 7776
+    - name: eventbus  
+      protocol: TCP
+      port: 38368
+      targetPort: 38368
+    - name: agentchannel
+      port: 24368
+      protocol: TCP
+      targetPort: 24368
+    - name: qualitygate
+      port: 12312
+      protocol: TCP
+      targetPort: 12312
+{{- end }}

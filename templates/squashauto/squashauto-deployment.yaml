@@ -1,0 +1,34 @@
+{{- if .Values.squashauto.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "AppCtx.squashautoName" . }}-deployment
+  labels: {{ include "AppCtx.squashautoLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.squashauto.replicas }}
+  selector:
+    matchLabels: {{ include "AppCtx.squashautoSelectorLabels" . | nindent 8 }}
+  template:
+    metadata:
+      labels: {{ include "AppCtx.squashautoLabels" . | nindent 10 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/squashauto/squashauto-config.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: squashauto
+        image: {{ .Values.squashauto.image.repository }}:{{ .Values.squashauto.image.tag }}
+        resources:
+           {{- toYaml .Values.squashauto.resources | nindent 10 }}
+        volumeMounts:
+          - mountPath: "/etc/squashtf/squashtf.pub"
+            subPath: squashtf.pub
+            name: pub-trusted-key
+            readOnly: true
+        envFrom:
+        - configMapRef:
+            name: {{ template "AppCtx.squashautoName" . }}-cm
+      volumes:
+        - name: pub-trusted-key
+          secret:
+            secretName: {{ template "AppCtx.squashautoName" . }}-secret
+{{- end }}

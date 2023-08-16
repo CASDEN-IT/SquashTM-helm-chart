@@ -1,0 +1,38 @@
+{{- if .Values.squash.enabled }}
+{{- if .Values.squash.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels: {{ include "AppCtx.squashLabels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    {{- if and .Values.squash.ingress.tls.enabled .Values.certManager }}
+    cert-manager.io/cluster-issuer: {{ .Values.squash.ingress.tls.clusterIssuer }}
+    {{- end }}
+    {{- if gt .Values.squash.replicas 1.0 }}
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-name: http-cookie
+    {{- end }}
+  name: {{ template "AppCtx.squashName" . }}-ingress
+spec:
+  rules:
+  - host: {{ .Values.squash.ingress.host }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ template "AppCtx.squashName" . }}-service
+            port:
+              number: {{ .Values.squash.servicePort }}
+        path: /squash
+        pathType: Prefix
+{{- if .Values.squash.ingress.tls.enabled }}
+  tls:
+  - hosts:
+      - {{ .Values.squash.ingress.host }}
+    secretName: {{ template "AppCtx.squashName" . }}-ingress-tls
+    {{- end }}  
+  {{- end }}  
+{{- end }}

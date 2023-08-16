@@ -1,0 +1,19 @@
+{{- if .Values.squash.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "AppCtx.squashName" . }}-cm
+  labels: {{ include "AppCtx.squashLabels" . | nindent 4 }}
+data:
+  SQTM_DB_TYPE: postgresql
+  SQTM_DB_NAME: {{ .Values.squash.db.name }}
+  {{- if .Values.postgresql.install }}
+  SQTM_DB_HOST: {{ include "AppCtx.name" . }}-postgresql
+  {{- else }}
+  SQTM_DB_HOST: {{ .Values.squash.db.host }}
+  {{- end }}
+  SQTM_DB_PORT: {{ .Values.squash.db.port | quote }}
+  SQTM_DB_SCHEMA: {{ .Values.squash.db.schema | quote }}
+  VIRTUAL_HOST: {{ .Values.squash.ingress.host }}
+  PLUGINS: {{ .Values.squash.plugins.list }}
+{{- end }}

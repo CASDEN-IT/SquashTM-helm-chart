@@ -1,0 +1,13 @@
+{{- if .Values.squash.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "AppCtx.squashName" . }}-service
+  labels: {{ include "AppCtx.squashLabels" . | nindent 8 }}
+spec:
+  selector: {{ include "AppCtx.squashSelectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.squash.servicePort }}
+      targetPort: 8080
+{{- end }}

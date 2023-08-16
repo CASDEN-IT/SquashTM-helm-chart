@@ -1,0 +1,116 @@
+{{- if .Values.squash.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "AppCtx.squashName" . }}-deployment
+  labels: {{ include "AppCtx.squashLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.squash.replicas }}
+  selector:
+    matchLabels: {{ include "AppCtx.squashSelectorLabels" . | nindent 8 }}
+  template:
+    metadata:
+      labels: {{ include "AppCtx.squashLabels" . | nindent 10 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/squash/squash-config.yaml") . | sha256sum }}
+    spec:
+      volumes:
+        {{- if .Values.squash.plugins.enabled }}
+        - name: plugins
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.squash.saml.enabled }}
+        - name: saml-keystore
+          secret:
+            secretName: {{ .Values.squash.saml.secretKeystore }}
+            items:
+            - key: keystore.jks
+              path: keystore.jks
+        - name: saml-sp
+          secret:
+            secretName: {{ .Values.squash.saml.secretSP }}
+            items:
+            - key: metadata_sp_squash.xml
+              path: metadata_sp_squash.xml
+        {{- end }}
+      {{- if .Values.squash.plugins.enabled }}
+      initContainers:
+          {{- if eq .Values.squash.plugins.type "public" }}
+        - name: dlplugins
+          image: curlimages/curl:7.86.0
+          command: ['sh', '-c', 'mkdir $HOME/plugins && for item in $PLUGINS; do curl --insecure $item | tar -xvz -C /$HOME/plugins; done && find $HOME/plugins -name \*.jar -exec cp {} /tmp \;']
+          {{- end }}
+          {{- if eq .Values.squash.plugins.type "internal" }}
+        - name: dlplugins
+          image: curlimages/curl:7.86.0
+          command: ['sh', '-c', 'for item in $PLUGINS; do curl --insecure --header "PRIVATE-TOKEN: {{.Values.squash.plugins.pat }}" $item | tar -xvz -C /tmp; done']
+          {{- end }}
+          volumeMounts:
+            - name: plugins
+              mountPath: /tmp
+          {{- if and (eq .Values.squash.plugins.type "public") .Values.proxy.enabled  }}
+          env:
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          envFrom:
+          - configMapRef:
+              name: {{ template "AppCtx.squashName" . }}-cm
+        {{- end }}
+      containers:
+      - name: squash
+        image: {{ .Values.squash.image.repository }}:{{ .Values.squash.image.tag }}
+        volumeMounts:
+          {{- if .Values.squash.plugins.enabled }}
+          - name: plugins
+            mountPath: /opt/squash-tm/plugins
+          {{- end }}
+          {{- if .Values.squash.saml.enabled }}
+          - name: saml-keystore
+            mountPath: /opt/squash-tm/conf/saml/keystore.jks
+            subPath: keystore.jks
+          - name: saml-sp
+            mountPath: /opt/squash-tm/conf/saml/metadata_sp_squash.xml
+            subPath: metadata_sp_squash.xml
+          {{- end }}
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+            {{- toYaml $.Values.squash.resources | nindent 10 }}
+        envFrom:
+        - configMapRef:
+            name: {{ template "AppCtx.squashName" . }}-cm
+        - secretRef:
+            {{- if .Values.squash.pgCredentials.existingSecret }}
+            name: {{ .Values.squash.pgCredentials.existingSecret }}
+            {{- else }}
+            name: {{ template "AppCtx.squashName" . }}-credentials
+            {{- end }}
+        {{- if .Values.squash.ldap.enabled }}
+        - secretRef:
+            name: {{ template "AppCtx.squashName" . }}-ldap-config
+        {{- end }}
+        {{- if .Values.squash.saml.enabled }}
+        - secretRef:
+            name: {{ template "AppCtx.squashName" . }}-saml-config
+        {{- end }}
+        readinessProbe:
+          httpGet:
+            path: /squash/index
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /squash/index
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        startupProbe:
+          httpGet:
+            path: /squash/index
+            port: http
+          failureThreshold: {{ .Values.squash.healthcheck.startupFailureThreshold }}
+          periodSeconds: {{ .Values.squash.healthcheck.startupPeriodSeconds }}
+{{- end }}

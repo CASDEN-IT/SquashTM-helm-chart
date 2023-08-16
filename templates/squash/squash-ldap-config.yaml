@@ -1,0 +1,17 @@
+{{- if .Values.squash.enabled }}
+{{- if .Values.squash.ldap.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ template "AppCtx.squashName" . }}-ldap-config
+  labels: {{ include "AppCtx.labels" . | nindent 4 }}
+type: Opaque
+data:
+  AUTHENTICATION_PROVIDER: {{ .Values.squash.ldap.provider | b64enc }}
+  AUTHENTICATION_LDAP_SERVER_URL: {{ .Values.squash.ldap.serverUrl | b64enc }}
+  AUTHENTICATION_LDAP_SERVER_MANAGERDN: {{ .Values.squash.ldap.managerDn | b64enc }}
+  AUTHENTICATION_LDAP_SERVER_MANAGERPASSWORD: {{ .Values.squash.ldap.managerPassword | b64enc }}
+  AUTHENTICATION_LDAP_USER_SEARCHBASE: {{ .Values.squash.ldap.searchBase | b64enc }}
+  AUTHENTICATION_LDAP_USER_SEARCHFILTER: {{ .Values.squash.ldap.searchFilter | b64enc }}
+{{- end }}
+{{- end }}

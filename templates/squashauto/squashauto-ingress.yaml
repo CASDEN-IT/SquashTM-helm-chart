@@ -1,0 +1,32 @@
+{{- if .Values.squashauto.enabled }}
+{{- if .Values.squashauto.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels: {{ include "AppCtx.squashautoLabels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    {{- if and .Values.squashauto.ingress.tls.enabled .Values.certManager }}
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    {{- end }}
+  name: {{ template "AppCtx.squashautoName" . }}-ingress
+spec:
+  rules:
+  - host: {{ .Values.squashauto.ingress.host }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ template "AppCtx.squashautoName" . }}-service
+            port:
+              number: 24368
+        path: /
+        pathType: Prefix
+{{- if .Values.squashauto.ingress.tls.enabled }}
+  tls:
+  - hosts:
+      - {{ .Values.squashauto.ingress.host }}
+    secretName: {{ template "AppCtx.squashautoName" . }}-ingress-tls
+    {{- end }}  
+  {{- end }}  
+{{- end }}

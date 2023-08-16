@@ -1,0 +1,21 @@
+{{- if .Values.squash.enabled }}
+{{- if .Values.squash.saml.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ template "AppCtx.squashName" . }}-saml-config
+  labels: {{ include "AppCtx.labels" . | nindent 4 }}
+type: Opaque
+data:
+  SAML_ENABLED: dHJ1ZQ==
+  SAML_IDP_METADATA_URL: {{ .Values.squash.saml.idpMetadataUrl | b64enc }}
+  SAML_SP_METADATA_URL: ZmlsZTovb3B0L3NxdWFzaC10bS9jb25mL3NhbWwvbWV0YWRhdGFfc3Bfc3F1YXNoLnhtbA==
+  SAML_KEYSTORE_URL: ZmlsZTovLy8vb3B0L3NxdWFzaC10bS9jb25mL3NhbWwva2V5c3RvcmUuamtz
+  SAML_KEYSTORE_PASSWORD: {{ .Values.squash.saml.keystorePassword | b64enc }}
+  SAML_KEYSTORE_CREDENTIALS_{{ .Values.squash.saml.keystoreCredentials }}: {{ .Values.squash.saml.keystorePassword | b64enc }}
+  SAML_KEYSTORE_DEFAULT_KEY: {{ .Values.squash.saml.keystoreKey | b64enc }}
+  {{- if .Values.squash.saml.defaultLogin }}
+  SQUASH_SECURITY_PREFERRED-AUTH-URL: L2F1dGgvc2FtbC9sb2dpbg==
+  {{- end }}
+{{- end }}
+{{- end }}

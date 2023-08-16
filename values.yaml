@@ -1,0 +1,104 @@
+# Default values for squash app.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## The global properties are used to configure multiple charts at once.
+## Extended documentation at doc/charts/globals.md
+
+#nameOverride: squash
+certManager: false # use a cert manager to manage Ingress certificates
+
+proxy:
+  enabled: true # use a proxy configuration when you want to download resources (for exemple to retrieve squash plugins on internet)
+  httpsProxy: "https://proxy.exemple.com:8080" # https proxy config
+squash:
+  enabled: true # enable squashTM component installation
+  replicas: 1 # squashtm deployement replicas : keep 1
+  image:
+    repository: squashtest/squash-tm # image to use for squashTM
+    tag: 4.1.0 # image tag to use for squashTM
+  servicePort: 80 # squashTM service port external access
+  healthcheck:
+    startupFailureThreshold: 30 # config startup threshold
+    startupPeriodSeconds: 10 # config startup period
+  ingress:
+    enabled: true # enable ingress used
+    host: squashtm.exemple.com # host to use in ingress squashTM
+    tls:
+      enabled: true # enable tls certif
+      clusterIssuer: letsencrypt-staging # if using certmanager, specify the cert issuer
+  saml:
+    enabled: false # enable saml auth implementation
+    secretKeystore: squash-keystore # secret keystore to retrieve , must be created before
+    secretSP: squash-sp # secret sp
+    idpMetadataUrl: "https://auth.exemple.fr/samlv2/squash" # URL of your auth identity provider
+    keystorePassword: XXXXXXXXXX # password of your keystore
+    keystoreCredentials: squashtm # user of your keystore
+    keystoreKey: squashtm # key of your keystore
+#set defaultLoin to redirect to this saml login when login
+    defaultLogin: true # use saml auth as default login
+  ldap:
+    enabled: true # enable ldap authentication
+    searchBase: "DC=exemple,DC=com" # ldap search base
+    searchFilter: "(sAMAccountName={0})" # ldap search filter
+    serverUrl: "ldap://exemple.com.:389" # use "ldap://exemple.fr.:389" or "ldaps://exemple.fr.:639"
+    managerDn: "ldapsquash" # user to access ldap
+    managerPassword: "xxxxxxxxxxxxx" # password of ldap user
+    provider: "ldap,internal"  # Use "ldap,internal" for multiple auth source
+#If using postgresql.install: true  you need to set the same credentials and adapt the pg host with pg service name.
+  pgCredentials:
+    #existingSecret:            the existing secret must use "user" ans "password" keys
+    user: squash # If using postgresql.install: true  you need to set the same credentials and adapt the pg host with pg service name.
+    pwd: Pa$$word # If using postgresql.install: true  you need to set the same credentials and adapt the pg host with pg service name.
+  db:
+    name: squash # db name
+    host: squash-postgres # db host (service_name.namespace if postgres is internaly in kube) , automaticallay set if using postgresql.install
+    port: "5432"
+    schema: public
+  plugins:
+    enabled: true # enable plugins
+# use type "inernal" if you use a package tgz plugins containing all plugin folder you will need a pat acces to package registry in gitlab and put gitlab packahge endpoint in "list" , use type "public" if you want to use a list off public plugins link
+    type: "internal" # use type "internal" if you use a package tgz plugins containing all plugin folder you will need a pat acces to package registry in gitlab and put gitlab packahge endpoint in "list" , use type "public" if you want to use a list of public plugins link
+
+    #    list: "https://nexus.squashtest.org/nexus/repository/public-releases/tm/plugin/bugtracker/gitlab-connector/4.0.0.RELEASE/squash-tm-gitlab-bt-connector-4.0.0.RELEASE.tar.gz https://nexus.squashtest.org/nexus/repository/public-releases/tm/plugin/autom/scm-git/4.0.0.RELEASE/plugin.scm.git-4.0.0.RELEASE.tar.gz https://nexus.squashtest.org/nexus/repository/public-releases/tm/plugin/autom/testautomation-squashautom/4.0.1.RELEASE/plugin.testautomation.squashautom.community-4.0.1.RELEASE.tar.gz"
+    list: "https://gitlab.exemple.fr/api/v4/projects/xxx/packages/generic/squash_plugins/0.0.1/plugins.tgz" # plugin list url
+    pat: glpat-xxxxxxxxxxxxxxxxxxx # if using plugins.type: internal , personal access token to use when authenticate with registry
+  resources:
+    requests:
+      memory: "100Mi" # memory request
+      cpu: "0.1" # cpu request
+    limits:
+      memory: "1800Mi" # memory limits
+      cpu: "0.5" # cpu limits
+
+squashauto:
+  enabled: true # enable squash auto resource ti deploy
+  replicas: 1 # replica count of squash auto deployment : keep 1
+  image:
+    repository: squashtest/squash-orchestrator # image to use for squashAuto
+    tag: 3.6.0 # image tag to use for squashAuto
+  ingress:
+    enabled: true # enable ingress if you need to access squash auto externally
+    host: squashauto.exemple.com # host of squashAuto
+    tls:
+      enabled: true # enable tls on ingress squashAuto
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "0.1"
+    limits:
+      memory: "1800Mi"
+      cpu: "0.8"
+  trustedKey:
+    enabled: true # use trusted Key for squashTM - squash Auto communication
+#copie the b64 encoded public key 
+    pub_key: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" # copie the b64 encoded public key, look documentation to generate a public key
+
+postgresql:
+  install: false # enable installation of a bitnami postgres if not using an existing postgres, not to use in prod
+  global:
+    postgresql:
+      auth:
+        username: squash # postgres username of local postgres bitnami , use the same in postgres squash config
+        password: pa$$word # postgres password of local postgres bitnami, use the same in postgres squash config
+        database: squash # postgres database of local postgres bitnami, use the same in postgres squash config
