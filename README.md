@@ -1,6 +1,6 @@
-# squash
+# Squash
 
-chart helm du produit [squash TM](https://www.squashtest.com/)
+Ce projet propose un Chart Helm du produit [squash TM](https://www.squashtest.com/)
 
 
 Il contient l'installation des produits SquashTest suivant :
@@ -244,3 +244,7 @@ The following table lists the configurable parameters of the Squash chart and th
 | `postgresql.global.postgresql.auth.username` | postgres username of local postgres bitnami , use the same in postgres squash config | `"squash"` |
 | `postgresql.global.postgresql.auth.password` | postgres password of local postgres bitnami, use the same in postgres squash config | `"pa$$word"` |
 | `postgresql.global.postgresql.auth.database` | postgres database of local postgres bitnami, use the same in postgres squash config | `"squash"` |
+
+# LICENCES
+
+Le code source de ce dépôt est publié sous [licence MIT](#licence-mit).
